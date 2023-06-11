@@ -1,43 +1,57 @@
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class BruteForceAttack {
+    private static final long MAX_EXECUTION_TIME = 5; // Limite de temps d'exécution en secondes
+
     public static void main(String[] args) {
-        String passwordHash = "d7a1b2c64852438bab1eedaccd4b7d55efe90a5ebd90dfc09cd3cd745133c5db";
+        String passwordHash = "30fb30a1e4ccbdc780770d44c175eb28bde824daf6d1d46185cdb9ca122b40c5";
         String password = bruteForceAttack(passwordHash);
 
         if (password != null) {
             System.out.println("Le mot de passe est : " + password);
         } else {
-            System.out.println("Le mot de passe n'a pas été trouvé.");
+            System.out.println("Le mot de passe n'a pas été trouvé dans le délai imparti.");
         }
     }
 
     public static String bruteForceAttack(String passwordHash) {
+        String charset = "abcdefghijklmnopqrstuvwxyz0123456789";
         int passwordLength = 5;
+        long startTime = System.nanoTime();
 
-        for (int i = 0; i < 26; i++) {
-            char c1 = (char) (97 + i);
-            for (int j = 0; j < 26; j++) {
-                char c2 = (char) (97 + j);
-                for (int k = 0; k < 26; k++) {
-                    char c3 = (char) (97 + k);
-                    for (int l = 0; l < 26; l++) {
-                        char c4 = (char) (97 + l);
-                        for (int m = 0; m < 26; m++) {
-                            char c5 = (char) (97 + m);
-                            String guess = "" + c1 + c2 + c3 + c4 + c5;
-                            String hashGuess = getSHA256Hash(guess);
-                            if (hashGuess.equals(passwordHash)) {
-                                return guess;
-                            }
-                        }
-                    }
-                }
+        for (String guess : generateGuesses(charset, passwordLength)) {
+            String hashGuess = getSHA256Hash(guess);
+            if (hashGuess.equals(passwordHash)) {
+                return guess;
+            }
+
+            long currentTime = System.nanoTime();
+            long elapsedTime = TimeUnit.SECONDS.convert(currentTime - startTime, TimeUnit.NANOSECONDS);
+            if (elapsedTime >= MAX_EXECUTION_TIME) {
+                break;
             }
         }
-
         return null;
+    }
+
+    private static Iterable<String> generateGuesses(String charset, int length) {
+        List<String> guesses = new ArrayList<>();
+        generateGuessesRecursive(charset, length, "", guesses);
+        return guesses;
+    }
+
+    private static void generateGuessesRecursive(String charset, int length, String prefix, List<String> guesses) {
+        if (length == 0) {
+            guesses.add(prefix);
+        } else {
+            for (char c : charset.toCharArray()) {
+                generateGuessesRecursive(charset, length - 1, prefix + c, guesses);
+            }
+        }
     }
 
     private static String getSHA256Hash(String input) {
